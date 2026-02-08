@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0b1220">
+
+<!-- iOS home screen icon + standalone hint -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Finance Tracker">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monthly Finance Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+        }
+
+        .dashboard {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .month-selector {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f7f9fc;
+            border-radius: 12px;
+        }
+
+        .month-selector button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+
+        .month-selector button:hover {
+            background: #5568d3;
+        }
+
+        .current-month {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 25px;
+            border-radius: 15px;
+            color: white;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .card.income {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        .card.expense {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+        }
+
+        .card.balance {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .card h3 {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .card .amount {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .input-section {
+            background: #f7f9fc;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+
+        .input-section h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .form-group {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr auto;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        input, select {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button.add-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        button.add-btn:hover {
+            background: #5568d3;
+        }
+
+        .transactions-section {
+            margin-top: 30px;
+        }
+
+        .transactions-section h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .transaction-list {
+            background: #f7f9fc;
+            border-radius: 15px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .transaction-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .transaction-info {
+            flex: 1;
+        }
+
+        .transaction-description {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .transaction-category {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .transaction-amount {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-right: 15px;
+        }
+
+        .transaction-amount.income {
+            color: #11998e;
+        }
+
+        .transaction-amount.expense {
+            color: #eb3349;
+        }
+
+        .delete-btn {
+            background: #eb3349;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .delete-btn:hover {
+            background: #d62839;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #999;
+            padding: 40px;
+        }
+
+        .budget-section {
+            background: #f7f9fc;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+
+        .budget-section h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .budget-form {
+            display: grid;
+            grid-template-columns: 2fr 1fr auto;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .budget-list {
+            display: grid;
+            gap: 15px;
+        }
+
+        .budget-item {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .budget-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .budget-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #333;
+        }
+
+        .subcategory-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .subcategory-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .subcategory-form input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .subcategory-form button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        .subcategory-form button:hover {
+            background: #5568d3;
+        }
+
+        .subcategory-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .subcategory-tag {
+            background: #f0f0f0;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .subcategory-tag .remove-sub {
+            color: #eb3349;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            line-height: 1;
+        }
+
+        .subcategory-tag .remove-sub:hover {
+            color: #d62839;
+        }
+
+        .toggle-subcategories {
+            background: transparent;
+            border: none;
+            color: #667eea;
+            cursor: pointer;
+            font-size: 0.85rem;
+            padding: 5px 10px;
+            margin-top: 5px;
+            text-decoration: underline;
+        }
+
+        .toggle-subcategories:hover {
+            color: #5568d3;
+        }
+
+        .budget-amounts {
+            display: flex;
+            gap: 20px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .budget-spent {
+            font-weight: 600;
+        }
+
+        .budget-total {
+            color: #999;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: #e0e0e0;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #11998e 0%, #38ef7d 100%);
+            transition: width 0.3s ease;
+            border-radius: 6px;
+        }
+
+        .progress-fill.warning {
+            background: linear-gradient(90deg, #f39c12 0%, #f1c40f 100%);
+        }
+
+        .progress-fill.danger {
+            background: linear-gradient(90deg, #eb3349 0%, #f45c43 100%);
+        }
+
+        .budget-remaining {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .budget-remaining.positive {
+            color: #11998e;
+        }
+
+        .budget-remaining.warning {
+            color: #f39c12;
+        }
+
+        .budget-remaining.negative {
+            color: #eb3349;
+        }
+
+        .delete-budget-btn {
+            background: #eb3349;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.3s;
+        }
+
+        .delete-budget-btn:hover {
+            background: #d62839;
+        }
+
+        .payment-methods-section {
+            background: #f7f9fc;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+
+        .payment-methods-section h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .payment-form {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .payment-form input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .payment-methods-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .payment-method-item {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .payment-method-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .payment-method-usage {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .usage-amount {
+            color: #eb3349;
+            font-weight: 600;
+        }
+
+        .usage-count {
+            color: #666;
+        }
+
+        .delete-payment-btn {
+            background: #eb3349;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.3s;
+        }
+
+        .delete-payment-btn:hover {
+            background: #d62839;
+        }
+
+        .payment-method-select {
+            width: 100%;
+            margin-top: 10px;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .payment-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .payment-stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .payment-stat-card h4 {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .payment-stat-card .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .payment-stat-card .stat-subtext {
+            font-size: 0.8rem;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .context-menu {
+            position: absolute;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            padding: 8px 0;
+            z-index: 10000;
+            min-width: 150px;
+            display: none;
+        }
+
+        .context-menu.active {
+            display: block;
+        }
+
+        .context-menu-item {
+            padding: 10px 20px;
+            cursor: pointer;
+            color: #333;
+            transition: background 0.2s;
+            font-size: 14px;
+        }
+
+        .context-menu-item:hover {
+            background: #f0f0f0;
+        }
+
+        .context-menu-item.delete {
+            color: #eb3349;
+        }
+
+        .context-menu-item.delete:hover {
+            background: #ffebee;
+        }
+
+        /* Hide default delete buttons */
+        .delete-btn,
+        .delete-budget-btn,
+        .delete-payment-btn {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .form-group {
+                grid-template-columns: 1fr;
+            }
+
+            .summary-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .budget-form {
+                grid-template-columns: 1fr;
+            }
+
+            .budget-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .payment-form {
+                flex-direction: column;
+            }
+
+            .payment-method-usage {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💰 Monthly Finance Tracker</h1>
+        
+        <div class="dashboard">
+            <!-- Month Selector -->
+            <div class="month-selector">
+                <button onclick="changeMonth(-1)">← Previous</button>
+                <div class="current-month" id="currentMonth"></div>
+                <button onclick="changeMonth(1)">Next →</button>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="summary-cards">
+                <div class="card income">
+                    <h3>Total Income</h3>
+                    <div class="amount" id="totalIncome">$0.00</div>
+                </div>
+                <div class="card expense">
+                    <h3>Total Expenses</h3>
+                    <div class="amount" id="totalExpenses">$0.00</div>
+                </div>
+                <div class="card balance">
+                    <h3>Balance</h3>
+                    <div class="amount" id="balance">$0.00</div>
+                </div>
+            </div>
+
+            <!-- Input Section -->
+            <div class="input-section">
+                <h2>Add Transaction</h2>
+                <div class="form-group">
+                    <input type="text" id="description" placeholder="Description (e.g., Salary, Groceries)">
+                    <input type="number" id="amount" placeholder="Amount" step="0.01">
+                    <select id="type" onchange="updateCategoryOptions(); togglePaymentMethod();">
+                        <option value="income">Income</option>
+                        <option value="expense">Expense</option>
+                    </select>
+                    <button class="add-btn" onclick="addTransaction()">Add</button>
+                </div>
+                <select id="category" style="width: 100%; margin-top: 10px; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px;">
+                    <option value="">Select Category (Optional)</option>
+                </select>
+                <select id="paymentMethod" class="payment-method-select" style="display: none;">
+                    <option value="">Select Payment Method (Optional)</option>
+                </select>
+            </div>
+
+            <!-- Budget Section -->
+            <div class="budget-section">
+                <h2>Monthly Budgets</h2>
+                <div class="budget-form">
+                    <input type="text" id="budgetCategory" placeholder="Category (e.g., Food, Transport)">
+                    <input type="number" id="budgetAmount" placeholder="Budget Amount" step="0.01">
+                    <button class="add-btn" onclick="addBudget()">Set Budget</button>
+                </div>
+                <div class="budget-list" id="budgetList">
+                    <div class="empty-state">No budgets set for this month. Add one above!</div>
+                </div>
+            </div>
+
+            <!-- Payment Methods Section -->
+            <div class="payment-methods-section">
+                <h2>Payment Methods</h2>
+                <div class="payment-form">
+                    <input type="text" id="paymentMethodName" placeholder="Payment method name (e.g., Visa *1234, Cash, Amex)">
+                    <button class="add-btn" onclick="addPaymentMethod()">Add Method</button>
+                </div>
+                <div class="payment-methods-list" id="paymentMethodsList">
+                    <div class="empty-state">No payment methods added yet. Add one above!</div>
+                </div>
+            </div>
+
+            <!-- Transactions List -->
+            <div class="transactions-section">
+                <h2>Transactions</h2>
+                <div class="transaction-list" id="transactionList">
+                    <div class="empty-state">No transactions yet. Add your first one above!</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Context Menu -->
+    <div id="contextMenu" class="context-menu">
+        <div class="context-menu-item delete" id="contextMenuDelete">Delete</div>
+    </div>
+
+    <script>
+        // Context menu management
+        let contextMenuTarget = null;
+        let contextMenuType = null;
+        let longPressTimer = null;
+        const contextMenu = document.getElementById('contextMenu');
+        const contextMenuDelete = document.getElementById('contextMenuDelete');
+
+        // Show context menu
+        window.showContextMenu = function(e, type, identifier) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            contextMenuType = type;
+            contextMenuTarget = identifier;
+            
+            const menu = document.getElementById('contextMenu');
+            menu.classList.add('active');
+            
+            // Use pageX/pageY for absolute positioning
+            const x = e.pageX;
+            const y = e.pageY;
+            
+            menu.style.left = x + 'px';
+            menu.style.top = y + 'px';
+            
+            return false;
+        }
+
+        // Hide context menu
+        function hideContextMenu() {
+            contextMenu.classList.remove('active');
+            contextMenuTarget = null;
+            contextMenuType = null;
+        }
+
+        // Handle context menu delete action
+        contextMenuDelete.addEventListener('click', function() {
+            if (contextMenuType === 'transaction') {
+                deleteTransaction(contextMenuTarget);
+            } else if (contextMenuType === 'budget') {
+                deleteBudget(contextMenuTarget);
+            } else if (contextMenuType === 'payment') {
+                deletePaymentMethod(contextMenuTarget);
+            } else if (contextMenuType === 'subcategory') {
+                const [category, subcategory] = contextMenuTarget.split('|||');
+                removeSubcategory(category, subcategory);
+            }
+            hideContextMenu();
+        });
+
+        // Close context menu when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!contextMenu.contains(e.target)) {
+                hideContextMenu();
+            }
+        });
+
+        // Close context menu on scroll
+        document.addEventListener('scroll', hideContextMenu);
+
+        // Initialize data structure
+        let currentDate = new Date();
+        let financialData = JSON.parse(localStorage.getItem('financialData')) || {};
+
+        // Initialize current month
+        function initializeMonth() {
+            const monthKey = getMonthKey(currentDate);
+            if (!financialData[monthKey]) {
+                financialData[monthKey] = {
+                    transactions: [],
+                    budgets: {},
+                    subcategories: {}, // Store subcategories per budget category
+                    paymentMethods: [] // Store payment methods
+                };
+            }
+            // Ensure subcategories object exists for backward compatibility
+            if (!financialData[monthKey].subcategories) {
+                financialData[monthKey].subcategories = {};
+            }
+            // Ensure paymentMethods array exists for backward compatibility
+            if (!financialData[monthKey].paymentMethods) {
+                financialData[monthKey].paymentMethods = [];
+            }
+            updateDisplay();
+            updateCategoryOptions();
+            updatePaymentMethodOptions();
+        }
+
+        // Get month key (YYYY-MM format)
+        function getMonthKey(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            return `${year}-${month}`;
+        }
+
+        // Format month for display
+        function formatMonth(date) {
+            return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        }
+
+        // Change month
+        function changeMonth(direction) {
+            currentDate.setMonth(currentDate.getMonth() + direction);
+            initializeMonth();
+        }
+
+        // Add transaction
+        function addTransaction() {
+            const description = document.getElementById('description').value.trim();
+            const amount = parseFloat(document.getElementById('amount').value);
+            const type = document.getElementById('type').value;
+            const categorySelect = document.getElementById('category');
+            const category = categorySelect.value || 'Uncategorized';
+            const paymentMethodSelect = document.getElementById('paymentMethod');
+            const paymentMethod = type === 'expense' ? (paymentMethodSelect.value || 'Not specified') : null;
+
+            if (!description || !amount || amount <= 0) {
+                alert('Please enter a valid description and amount');
+                return;
+            }
+
+            const monthKey = getMonthKey(currentDate);
+            const transaction = {
+                id: Date.now(),
+                description,
+                amount,
+                type,
+                category: category,
+                paymentMethod: paymentMethod,
+                date: new Date().toISOString()
+            };
+
+            financialData[monthKey].transactions.push(transaction);
+            saveData();
+            updateDisplay();
+
+            // Clear inputs
+            document.getElementById('description').value = '';
+            document.getElementById('amount').value = '';
+            categorySelect.selectedIndex = 0;
+            if (type === 'expense') {
+                paymentMethodSelect.selectedIndex = 0;
+            }
+        }
+
+        // Update category options based on transaction type
+        function updateCategoryOptions() {
+            const type = document.getElementById('type').value;
+            const categorySelect = document.getElementById('category');
+            const monthKey = getMonthKey(currentDate);
+            const budgets = financialData[monthKey]?.budgets || {};
+            const subcategories = financialData[monthKey]?.subcategories || {};
+
+            // Clear existing options
+            categorySelect.innerHTML = '<option value="">Select Category (Optional)</option>';
+
+            if (type === 'expense' && Object.keys(budgets).length > 0) {
+                // Add budget categories and their subcategories for expenses
+                Object.keys(budgets).sort().forEach(category => {
+                    // Add main category as optgroup
+                    const optgroup = document.createElement('optgroup');
+                    optgroup.label = category;
+                    
+                    // Add main category option
+                    const mainOption = document.createElement('option');
+                    mainOption.value = category;
+                    mainOption.textContent = `${category} (General)`;
+                    optgroup.appendChild(mainOption);
+                    
+                    // Add subcategories if they exist
+                    if (subcategories[category] && subcategories[category].length > 0) {
+                        subcategories[category].forEach(subcategory => {
+                            const subOption = document.createElement('option');
+                            subOption.value = `${category}:${subcategory}`;
+                            subOption.textContent = `  └─ ${subcategory}`;
+                            optgroup.appendChild(subOption);
+                        });
+                    }
+                    
+                    categorySelect.appendChild(optgroup);
+                });
+                
+                // Add "Other" option
+                const otherOption = document.createElement('option');
+                otherOption.value = 'Other';
+                otherOption.textContent = 'Other';
+                categorySelect.appendChild(otherOption);
+            } else if (type === 'income') {
+                // Add common income categories
+                const incomeCategories = ['Salary', 'Freelance', 'Investment', 'Gift', 'Other'];
+                incomeCategories.forEach(category => {
+                    const option = document.createElement('option');
+                    option.value = category;
+                    option.textContent = category;
+                    categorySelect.appendChild(option);
+                });
+            } else {
+                // If no budgets set for expenses, show generic message
+                const option = document.createElement('option');
+                option.value = 'Uncategorized';
+                option.textContent = 'Uncategorized (Set budgets first)';
+                categorySelect.appendChild(option);
+            }
+        }
+
+        // Delete transaction
+        function deleteTransaction(id) {
+            const monthKey = getMonthKey(currentDate);
+            financialData[monthKey].transactions = financialData[monthKey].transactions.filter(t => t.id !== id);
+            saveData();
+            updateDisplay();
+        }
+
+        // Add budget
+        function addBudget() {
+            const category = document.getElementById('budgetCategory').value.trim();
+            const amount = parseFloat(document.getElementById('budgetAmount').value);
+
+            if (!category || !amount || amount <= 0) {
+                alert('Please enter a valid category and budget amount');
+                return;
+            }
+
+            const monthKey = getMonthKey(currentDate);
+            if (!financialData[monthKey].budgets) {
+                financialData[monthKey].budgets = {};
+            }
+
+            financialData[monthKey].budgets[category] = amount;
+            saveData();
+            updateDisplay();
+            updateCategoryOptions(); // Update category dropdown
+
+            // Clear inputs
+            document.getElementById('budgetCategory').value = '';
+            document.getElementById('budgetAmount').value = '';
+        }
+
+        // Delete budget
+        function deleteBudget(category) {
+            const monthKey = getMonthKey(currentDate);
+            delete financialData[monthKey].budgets[category];
+            delete financialData[monthKey].subcategories[category]; // Also delete subcategories
+            saveData();
+            updateDisplay();
+            updateCategoryOptions(); // Update category dropdown
+        }
+
+        // Add subcategory
+        function addSubcategory(sanitizedCategory) {
+            const inputId = `subcategory-input-${sanitizedCategory}`;
+            const input = document.getElementById(inputId);
+            const subcategory = input.value.trim();
+
+            if (!subcategory) {
+                alert('Please enter a subcategory name');
+                return;
+            }
+
+            const monthKey = getMonthKey(currentDate);
+            const budgets = financialData[monthKey].budgets;
+            
+            // Find the actual category name from the sanitized version
+            const actualCategory = Object.keys(budgets).find(cat => 
+                cat.replace(/[^a-zA-Z0-9]/g, '-') === sanitizedCategory
+            );
+
+            if (!actualCategory) return;
+
+            if (!financialData[monthKey].subcategories[actualCategory]) {
+                financialData[monthKey].subcategories[actualCategory] = [];
+            }
+
+            // Check if subcategory already exists
+            if (financialData[monthKey].subcategories[actualCategory].includes(subcategory)) {
+                alert('This subcategory already exists');
+                return;
+            }
+
+            financialData[monthKey].subcategories[actualCategory].push(subcategory);
+            saveData();
+            updateDisplay();
+            updateCategoryOptions();
+
+            // Clear input
+            input.value = '';
+        }
+
+        // Remove subcategory
+        function removeSubcategory(sanitizedCategory, subcategory) {
+            const monthKey = getMonthKey(currentDate);
+            const budgets = financialData[monthKey].budgets;
+            
+            // Find the actual category name from the sanitized version
+            const actualCategory = Object.keys(budgets).find(cat => 
+                cat.replace(/[^a-zA-Z0-9]/g, '-') === sanitizedCategory
+            );
+
+            if (!actualCategory) return;
+
+            if (financialData[monthKey].subcategories[actualCategory]) {
+                financialData[monthKey].subcategories[actualCategory] = 
+                    financialData[monthKey].subcategories[actualCategory].filter(s => s !== subcategory);
+                saveData();
+                updateDisplay();
+                updateCategoryOptions();
+            }
+        }
+
+        // Toggle subcategory section visibility
+        function toggleSubcategorySection(category) {
+            const sectionId = `subcategory-section-${category}`;
+            const section = document.getElementById(sectionId);
+            const button = document.getElementById(`toggle-btn-${category}`);
+            
+            if (section.style.display === 'none') {
+                section.style.display = 'block';
+                button.textContent = 'Hide Subcategories';
+            } else {
+                section.style.display = 'none';
+                button.textContent = 'Manage Subcategories';
+            }
+        }
+
+        // Add payment method
+        function addPaymentMethod() {
+            const name = document.getElementById('paymentMethodName').value.trim();
+
+            if (!name) {
+                alert('Please enter a payment method name');
+                return;
+            }
+
+            const monthKey = getMonthKey(currentDate);
+            
+            // Check if payment method already exists
+            if (financialData[monthKey].paymentMethods.includes(name)) {
+                alert('This payment method already exists');
+                return;
+            }
+
+            financialData[monthKey].paymentMethods.push(name);
+            saveData();
+            updateDisplay();
+            updatePaymentMethodOptions();
+
+            // Clear input
+            document.getElementById('paymentMethodName').value = '';
+        }
+
+        // Delete payment method
+        function deletePaymentMethod(method) {
+            const monthKey = getMonthKey(currentDate);
+            financialData[monthKey].paymentMethods = 
+                financialData[monthKey].paymentMethods.filter(m => m !== method);
+            saveData();
+            updateDisplay();
+            updatePaymentMethodOptions();
+        }
+
+        // Update payment method dropdown options
+        function updatePaymentMethodOptions() {
+            const paymentMethodSelect = document.getElementById('paymentMethod');
+            const monthKey = getMonthKey(currentDate);
+            const paymentMethods = financialData[monthKey]?.paymentMethods || [];
+
+            // Clear existing options
+            paymentMethodSelect.innerHTML = '<option value="">Select Payment Method (Optional)</option>';
+
+            paymentMethods.forEach(method => {
+                const option = document.createElement('option');
+                option.value = method;
+                option.textContent = method;
+                paymentMethodSelect.appendChild(option);
+            });
+
+            // Add "Cash" and "Other" as default options
+            if (paymentMethods.length > 0) {
+                const otherOption = document.createElement('option');
+                otherOption.value = 'Other';
+                otherOption.textContent = 'Other';
+                paymentMethodSelect.appendChild(otherOption);
+            }
+        }
+
+        // Toggle payment method visibility
+        function togglePaymentMethod() {
+            const type = document.getElementById('type').value;
+            const paymentMethodSelect = document.getElementById('paymentMethod');
+            
+            if (type === 'expense') {
+                paymentMethodSelect.style.display = 'block';
+            } else {
+                paymentMethodSelect.style.display = 'none';
+            }
+        }
+
+        // Calculate payment method usage
+        function calculatePaymentMethodUsage() {
+            const monthKey = getMonthKey(currentDate);
+            const transactions = financialData[monthKey]?.transactions || [];
+            const usage = {};
+
+            transactions
+                .filter(t => t.type === 'expense' && t.paymentMethod)
+                .forEach(t => {
+                    if (!usage[t.paymentMethod]) {
+                        usage[t.paymentMethod] = { amount: 0, count: 0 };
+                    }
+                    usage[t.paymentMethod].amount += t.amount;
+                    usage[t.paymentMethod].count += 1;
+                });
+
+            return usage;
+        }
+
+        // Calculate spending by category
+        function calculateCategorySpending() {
+            const monthKey = getMonthKey(currentDate);
+            const transactions = financialData[monthKey]?.transactions || [];
+            const spending = {};
+
+            transactions
+                .filter(t => t.type === 'expense')
+                .forEach(t => {
+                    let category = t.category || 'Uncategorized';
+                    
+                    // If category contains ":", it's a subcategory (e.g., "Bills:Utilities")
+                    // Extract the main category for budget tracking
+                    if (category.includes(':')) {
+                        category = category.split(':')[0];
+                    }
+                    
+                    spending[category] = (spending[category] || 0) + t.amount;
+                });
+
+            return spending;
+        }
+
+        // Calculate totals
+        function calculateTotals() {
+            const monthKey = getMonthKey(currentDate);
+            const transactions = financialData[monthKey]?.transactions || [];
+
+            const income = transactions
+                .filter(t => t.type === 'income')
+                .reduce((sum, t) => sum + t.amount, 0);
+
+            const expenses = transactions
+                .filter(t => t.type === 'expense')
+                .reduce((sum, t) => sum + t.amount, 0);
+
+            const balance = income - expenses;
+
+            return { income, expenses, balance };
+        }
+
+        // Update display
+        function updateDisplay() {
+            // Update month display
+            document.getElementById('currentMonth').textContent = formatMonth(currentDate);
+
+            // Update totals
+            const { income, expenses, balance } = calculateTotals();
+            document.getElementById('totalIncome').textContent = `$${income.toFixed(2)}`;
+            document.getElementById('totalExpenses').textContent = `$${expenses.toFixed(2)}`;
+            document.getElementById('balance').textContent = `$${balance.toFixed(2)}`;
+
+            // Update transactions list
+            const monthKey = getMonthKey(currentDate);
+            const transactions = financialData[monthKey]?.transactions || [];
+            const listElement = document.getElementById('transactionList');
+
+            if (transactions.length === 0) {
+                listElement.innerHTML = '<div class="empty-state">No transactions yet. Add your first one above!</div>';
+            } else {
+                listElement.innerHTML = transactions
+                    .sort((a, b) => new Date(b.date) - new Date(a.date))
+                    .map(t => {
+                        // Format category display
+                        let categoryDisplay = t.category;
+                        if (t.category.includes(':')) {
+                            const parts = t.category.split(':');
+                            categoryDisplay = `${parts[0]} → ${parts[1]}`;
+                        }
+                        
+                        // Add payment method to category display if it's an expense
+                        let fullCategoryDisplay = categoryDisplay;
+                        if (t.type === 'expense' && t.paymentMethod) {
+                            fullCategoryDisplay += ` • ${t.paymentMethod}`;
+                        }
+                        
+                        return `
+                            <div class="transaction-item" 
+                                 data-id="${t.id}" 
+                                 data-type="transaction"
+                                 oncontextmenu="showContextMenu(event, 'transaction', ${t.id}); return false;">
+                                <div class="transaction-info">
+                                    <div class="transaction-description">${t.description}</div>
+                                    <div class="transaction-category">${fullCategoryDisplay}</div>
+                                </div>
+                                <div class="transaction-amount ${t.type}">
+                                    ${t.type === 'income' ? '+' : '-'}$${t.amount.toFixed(2)}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                
+                // Add long press handlers for mobile
+                document.querySelectorAll('.transaction-item').forEach(item => {
+                    item.addEventListener('touchstart', function(e) {
+                        const id = parseInt(this.dataset.id);
+                        longPressTimer = setTimeout(() => {
+                            const touch = e.touches[0];
+                            showContextMenu({
+                                preventDefault: () => {},
+                                stopPropagation: () => {},
+                                pageX: touch.pageX,
+                                pageY: touch.pageY
+                            }, 'transaction', id);
+                        }, 500);
+                    });
+                    
+                    item.addEventListener('touchend', function() {
+                        clearTimeout(longPressTimer);
+                    });
+                    
+                    item.addEventListener('touchmove', function() {
+                        clearTimeout(longPressTimer);
+                    });
+                });
+            }
+
+            // Update budgets list
+            const budgets = financialData[monthKey]?.budgets || {};
+            const subcategories = financialData[monthKey]?.subcategories || {};
+            const spending = calculateCategorySpending();
+            const budgetListElement = document.getElementById('budgetList');
+
+            if (Object.keys(budgets).length === 0) {
+                budgetListElement.innerHTML = '<div class="empty-state">No budgets set for this month. Add one above!</div>';
+            } else {
+                budgetListElement.innerHTML = Object.entries(budgets)
+                    .map(([category, budgetAmount]) => {
+                        const spent = spending[category] || 0;
+                        const remaining = budgetAmount - spent;
+                        const percentage = Math.min((spent / budgetAmount) * 100, 100);
+                        
+                        let progressClass = '';
+                        let remainingClass = 'positive';
+                        
+                        if (percentage >= 100) {
+                            progressClass = 'danger';
+                            remainingClass = 'negative';
+                        } else if (percentage >= 80) {
+                            progressClass = 'warning';
+                            remainingClass = 'warning';
+                        }
+
+                        // Sanitize category for use in IDs - MUST BE DEFINED BEFORE USE
+                        const sanitizedCategory = category.replace(/[^a-zA-Z0-9]/g, '-');
+
+                        const categorySubcategories = subcategories[category] || [];
+                        const subcategoryTags = categorySubcategories.length > 0 
+                            ? categorySubcategories.map(sub => 
+                                `<div class="subcategory-tag" 
+                                      data-category="${sanitizedCategory}" 
+                                      data-subcategory="${sub}"
+                                      oncontextmenu="showContextMenu(event, 'subcategory', '${sanitizedCategory}|||${sub}'); return false;">
+                                    ${sub}
+                                    <span class="remove-sub" style="display: none;">×</span>
+                                </div>`
+                            ).join('')
+                            : '<div style="color: #999; font-size: 0.85rem; font-style: italic;">No subcategories yet</div>';
+
+                        return `
+                            <div class="budget-item" 
+                                 data-category="${category}" 
+                                 data-type="budget"
+                                 oncontextmenu="showContextMenu(event, 'budget', '${sanitizedCategory}'); return false;">
+                                <div class="budget-header">
+                                    <div>
+                                        <div class="budget-name">${category}</div>
+                                        <div class="budget-amounts">
+                                            <span class="budget-spent">Spent: $${spent.toFixed(2)}</span>
+                                            <span class="budget-total">of $${budgetAmount.toFixed(2)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill ${progressClass}" style="width: ${percentage}%"></div>
+                                </div>
+                                <div class="budget-remaining ${remainingClass}">
+                                    ${remaining >= 0 
+                                        ? `$${remaining.toFixed(2)} remaining` 
+                                        : `$${Math.abs(remaining).toFixed(2)} over budget`}
+                                </div>
+                                <button class="toggle-subcategories" id="toggle-btn-${sanitizedCategory}" onclick="toggleSubcategorySection('${sanitizedCategory}')">
+                                    Manage Subcategories
+                                </button>
+                                <div class="subcategory-section" id="subcategory-section-${sanitizedCategory}" style="display: none;">
+                                    <div class="subcategory-form">
+                                        <input type="text" id="subcategory-input-${sanitizedCategory}" placeholder="Add subcategory (e.g., Utilities, Phone bill)">
+                                        <button onclick="addSubcategory('${sanitizedCategory}')">Add</button>
+                                    </div>
+                                    <div class="subcategory-list">
+                                        ${subcategoryTags}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                
+                // Add long press handlers for budget items
+                document.querySelectorAll('.budget-item').forEach(item => {
+                    item.addEventListener('touchstart', function(e) {
+                        if (e.target.closest('.subcategory-section')) return; // Don't trigger on subcategory section
+                        const category = this.dataset.category.replace(/[^a-zA-Z0-9]/g, '-');
+                        longPressTimer = setTimeout(() => {
+                            const touch = e.touches[0];
+                            showContextMenu({
+                                preventDefault: () => {},
+                                stopPropagation: () => {},
+                                pageX: touch.pageX,
+                                pageY: touch.pageY
+                            }, 'budget', category);
+                        }, 500);
+                    });
+                    
+                    item.addEventListener('touchend', function() {
+                        clearTimeout(longPressTimer);
+                    });
+                    
+                    item.addEventListener('touchmove', function() {
+                        clearTimeout(longPressTimer);
+                    });
+                });
+
+                // Add long press handlers for subcategory tags
+                document.querySelectorAll('.subcategory-tag').forEach(tag => {
+                    tag.addEventListener('touchstart', function(e) {
+                        const category = this.dataset.category;
+                        const subcategory = this.dataset.subcategory;
+                        longPressTimer = setTimeout(() => {
+                            const touch = e.touches[0];
+                            showContextMenu({
+                                preventDefault: () => {},
+                                stopPropagation: () => {},
+                                pageX: touch.pageX,
+                                pageY: touch.pageY
+                            }, 'subcategory', `${category}|||${subcategory}`);
+                        }, 500);
+                    });
+                    
+                    tag.addEventListener('touchend', function() {
+                        clearTimeout(longPressTimer);
+                    });
+                    
+                    tag.addEventListener('touchmove', function() {
+                        clearTimeout(longPressTimer);
+                    });
+                });
+            }
+
+            // Update payment methods list
+            const paymentMethods = financialData[monthKey]?.paymentMethods || [];
+            const paymentUsage = calculatePaymentMethodUsage();
+            const paymentMethodsListElement = document.getElementById('paymentMethodsList');
+
+            if (paymentMethods.length === 0) {
+                paymentMethodsListElement.innerHTML = '<div class="empty-state">No payment methods added yet. Add one above!</div>';
+            } else {
+                paymentMethodsListElement.innerHTML = paymentMethods
+                    .map(method => {
+                        const usage = paymentUsage[method] || { amount: 0, count: 0 };
+                        
+                        return `
+                            <div class="payment-method-item" 
+                                 data-method="${method}"
+                                 data-type="payment"
+                                 oncontextmenu="showContextMenu(event, 'payment', '${method}'); return false;">
+                                <div class="payment-method-name">${method}</div>
+                                <div class="payment-method-usage">
+                                    <span class="usage-amount">$${usage.amount.toFixed(2)}</span>
+                                    <span class="usage-count">${usage.count} transaction${usage.count !== 1 ? 's' : ''}</span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                
+                // Add long press handlers for payment method items
+                document.querySelectorAll('.payment-method-item').forEach(item => {
+                    item.addEventListener('touchstart', function(e) {
+                        const method = this.dataset.method;
+                        longPressTimer = setTimeout(() => {
+                            const touch = e.touches[0];
+                            showContextMenu({
+                                preventDefault: () => {},
+                                stopPropagation: () => {},
+                                pageX: touch.pageX,
+                                pageY: touch.pageY
+                            }, 'payment', method);
+                        }, 500);
+                    });
+                    
+                    item.addEventListener('touchend', function() {
+                        clearTimeout(longPressTimer);
+                    });
+                    
+                    item.addEventListener('touchmove', function() {
+                        clearTimeout(longPressTimer);
+                    });
+                });
+            }
+        }
+
+        // Save data to localStorage
+        function saveData() {
+            localStorage.setItem('financialData', JSON.stringify(financialData));
+        }
+
+        // Initialize on load
+        initializeMonth();
+    </script>
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./sw.js");
+  }
+</script>
+</body>
+</html>
