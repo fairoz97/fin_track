@@ -1,15 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#0b1220">
-
-<!-- iOS home screen icon + standalone hint -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Finance Tracker">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monthly Finance Tracker</title>
@@ -559,6 +550,66 @@
             margin-top: 5px;
         }
 
+        .budget-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+
+        .budget-actions button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .budget-actions button:hover {
+            background: #5568d3;
+        }
+
+        .budget-actions button.secondary {
+            background: #6c757d;
+        }
+
+        .budget-actions button.secondary:hover {
+            background: #5a6268;
+        }
+
+        .budget-actions .info-text {
+            color: #666;
+            font-size: 0.9rem;
+            font-style: italic;
+        }
+
+        .edit-mode .budget-amount-input {
+            width: 120px;
+            padding: 8px;
+            border: 2px solid #667eea;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .edit-mode .save-budget-btn {
+            background: #11998e;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+
+        .edit-mode .save-budget-btn:hover {
+            background: #0e8577;
+        }
+
         .context-menu {
             position: absolute;
             background: white;
@@ -684,6 +735,11 @@
             <!-- Budget Section -->
             <div class="budget-section">
                 <h2>Monthly Budgets</h2>
+                <div class="budget-actions">
+                    <button onclick="carryForwardBudgets()">Copy Budgets from Previous Month</button>
+                    <button id="editModeToggle" class="secondary" onclick="toggleEditMode()">Edit Budgets</button>
+                    <span class="info-text" id="editModeInfo"></span>
+                </div>
                 <div class="budget-form">
                     <input type="text" id="budgetCategory" placeholder="Category (e.g., Food, Transport)">
                     <input type="number" id="budgetAmount" placeholder="Budget Amount" step="0.01">
@@ -785,6 +841,7 @@
         // Initialize data structure
         let currentDate = new Date();
         let financialData = JSON.parse(localStorage.getItem('financialData')) || {};
+        let editMode = false;
 
         // Initialize current month
         function initializeMonth() {
@@ -968,6 +1025,82 @@
             saveData();
             updateDisplay();
             updateCategoryOptions(); // Update category dropdown
+        }
+
+        // Carry forward budgets from previous month
+        function carryForwardBudgets() {
+            const currentMonthKey = getMonthKey(currentDate);
+            
+            // Calculate previous month
+            const prevDate = new Date(currentDate);
+            prevDate.setMonth(prevDate.getMonth() - 1);
+            const prevMonthKey = getMonthKey(prevDate);
+            
+            // Check if previous month has budgets
+            if (!financialData[prevMonthKey] || !financialData[prevMonthKey].budgets || Object.keys(financialData[prevMonthKey].budgets).length === 0) {
+                alert('No budgets found in previous month to copy.');
+                return;
+            }
+            
+            // Check if current month already has budgets
+            const currentBudgets = financialData[currentMonthKey]?.budgets || {};
+            if (Object.keys(currentBudgets).length > 0) {
+                if (!confirm('This month already has budgets. Do you want to replace them with budgets from the previous month?')) {
+                    return;
+                }
+            }
+            
+            // Copy budgets and subcategories from previous month
+            financialData[currentMonthKey].budgets = JSON.parse(JSON.stringify(financialData[prevMonthKey].budgets));
+            financialData[currentMonthKey].subcategories = JSON.parse(JSON.stringify(financialData[prevMonthKey].subcategories || {}));
+            
+            saveData();
+            updateDisplay();
+            updateCategoryOptions();
+            
+            alert('Budgets copied from previous month!');
+        }
+
+        // Toggle edit mode for budgets
+        function toggleEditMode() {
+            editMode = !editMode;
+            const button = document.getElementById('editModeToggle');
+            const info = document.getElementById('editModeInfo');
+            
+            if (editMode) {
+                button.textContent = 'Done Editing';
+                button.style.background = '#11998e';
+                info.textContent = 'Click on budget amounts to edit';
+            } else {
+                button.textContent = 'Edit Budgets';
+                button.style.background = '#6c757d';
+                info.textContent = '';
+            }
+            
+            updateDisplay();
+        }
+
+        // Save edited budget amount
+        function saveBudgetEdit(sanitizedCategory, newAmount) {
+            const monthKey = getMonthKey(currentDate);
+            const budgets = financialData[monthKey].budgets;
+            
+            // Find the actual category name from the sanitized version
+            const actualCategory = Object.keys(budgets).find(cat => 
+                cat.replace(/[^a-zA-Z0-9]/g, '-') === sanitizedCategory
+            );
+            
+            if (!actualCategory) return;
+            
+            const amount = parseFloat(newAmount);
+            if (!amount || amount <= 0) {
+                alert('Please enter a valid budget amount');
+                return;
+            }
+            
+            financialData[monthKey].budgets[actualCategory] = amount;
+            saveData();
+            updateDisplay();
         }
 
         // Add subcategory
@@ -1297,8 +1430,24 @@
                             ).join('')
                             : '<div style="color: #999; font-size: 0.85rem; font-style: italic;">No subcategories yet</div>';
 
+                        // Budget amount display - editable in edit mode
+                        let budgetAmountDisplay;
+                        if (editMode) {
+                            budgetAmountDisplay = `
+                                <input type="number" 
+                                       class="budget-amount-input" 
+                                       id="budget-edit-${sanitizedCategory}"
+                                       value="${budgetAmount}" 
+                                       step="0.01"
+                                       onkeypress="if(event.key === 'Enter') saveBudgetEdit('${sanitizedCategory}', this.value)">
+                                <button class="save-budget-btn" onclick="saveBudgetEdit('${sanitizedCategory}', document.getElementById('budget-edit-${sanitizedCategory}').value)">Save</button>
+                            `;
+                        } else {
+                            budgetAmountDisplay = `$${budgetAmount.toFixed(2)}`;
+                        }
+
                         return `
-                            <div class="budget-item" 
+                            <div class="budget-item ${editMode ? 'edit-mode' : ''}" 
                                  data-category="${category}" 
                                  data-type="budget"
                                  oncontextmenu="showContextMenu(event, 'budget', '${sanitizedCategory}'); return false;">
@@ -1307,7 +1456,7 @@
                                         <div class="budget-name">${category}</div>
                                         <div class="budget-amounts">
                                             <span class="budget-spent">Spent: $${spent.toFixed(2)}</span>
-                                            <span class="budget-total">of $${budgetAmount.toFixed(2)}</span>
+                                            <span class="budget-total">of ${budgetAmountDisplay}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1446,10 +1595,5 @@
         // Initialize on load
         initializeMonth();
     </script>
-<script>
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./sw.js");
-  }
-</script>
 </body>
 </html>
