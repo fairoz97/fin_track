@@ -753,6 +753,9 @@
             <!-- Payment Methods Section -->
             <div class="payment-methods-section">
                 <h2>Payment Methods</h2>
+                <div class="budget-actions">
+                    <button onclick="carryForwardPaymentMethods()">Copy Payment Methods from Previous Month</button>
+                </div>
                 <div class="payment-form">
                     <input type="text" id="paymentMethodName" placeholder="Payment method name (e.g., Visa *1234, Cash, Amex)">
                     <button class="add-btn" onclick="addPaymentMethod()">Add Method</button>
@@ -1059,6 +1062,39 @@
             updateCategoryOptions();
             
             alert('Budgets copied from previous month!');
+        }
+
+        // Carry forward payment methods from previous month
+        function carryForwardPaymentMethods() {
+            const currentMonthKey = getMonthKey(currentDate);
+            
+            // Calculate previous month
+            const prevDate = new Date(currentDate);
+            prevDate.setMonth(prevDate.getMonth() - 1);
+            const prevMonthKey = getMonthKey(prevDate);
+            
+            // Check if previous month has payment methods
+            if (!financialData[prevMonthKey] || !financialData[prevMonthKey].paymentMethods || financialData[prevMonthKey].paymentMethods.length === 0) {
+                alert('No payment methods found in previous month to copy.');
+                return;
+            }
+            
+            // Check if current month already has payment methods
+            const currentPaymentMethods = financialData[currentMonthKey]?.paymentMethods || [];
+            if (currentPaymentMethods.length > 0) {
+                if (!confirm('This month already has payment methods. Do you want to replace them with payment methods from the previous month?')) {
+                    return;
+                }
+            }
+            
+            // Copy payment methods from previous month
+            financialData[currentMonthKey].paymentMethods = JSON.parse(JSON.stringify(financialData[prevMonthKey].paymentMethods));
+            
+            saveData();
+            updateDisplay();
+            updatePaymentMethodOptions();
+            
+            alert('Payment methods copied from previous month!');
         }
 
         // Toggle edit mode for budgets
